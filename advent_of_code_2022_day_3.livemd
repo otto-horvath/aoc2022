@@ -1,0 +1,116 @@
+# Adventure of Code 2022 - day 3
+
+## Exercise
+
+https://adventofcode.com/2022/day/3
+
+## Input
+
+```elixir
+bags =
+  [File.cwd!(), "workspace", "input_day_3.txt"]
+  |> Enum.join("/")
+  |> File.read!()
+  |> String.split()
+```
+
+## Problem 1 - sum of priorities
+
+```elixir
+splited_bags =
+  bags
+  |> Enum.map(fn items ->
+    middle = String.length(items) |> div(2)
+    String.split_at(items, middle)
+  end)
+```
+
+```elixir
+uniq_items_bag =
+  splited_bags
+  |> Enum.map(fn {left, right} ->
+    items_left =
+      left
+      |> String.graphemes()
+      |> MapSet.new()
+
+    items_right =
+      right
+      |> String.graphemes()
+      |> MapSet.new()
+
+    {items_left, items_right}
+  end)
+```
+
+```elixir
+intersection =
+  uniq_items_bag
+  |> Enum.map(fn {left, right} ->
+    MapSet.intersection(left, right)
+  end)
+```
+
+```elixir
+points =
+  intersection
+  |> Enum.map(&MapSet.to_list/1)
+  |> Enum.map(fn [item] ->
+    item
+    |> :binary.first()
+    |> case do
+      code when code >= 97 ->
+        code - 96
+
+      code ->
+        code - 38
+    end
+  end)
+```
+
+```elixir
+Enum.sum(points)
+```
+
+## Problem 2- badge to elves groups
+
+```elixir
+groups = Enum.chunk_every(bags, 3)
+```
+
+```elixir
+badges =
+  groups
+  |> Enum.map(fn group ->
+    [left, right] =
+      group
+      |> Enum.map(&String.graphemes/1)
+      |> Enum.map(&MapSet.new/1)
+      |> Enum.chunk_every(2, 1, :discard)
+      |> Enum.map(fn [a, b] -> MapSet.intersection(a, b) end)
+
+    MapSet.intersection(left, right)
+    |> Enum.to_list()
+    |> List.first()
+  end)
+```
+
+```elixir
+points =
+  badges
+  |> Enum.map(fn item ->
+    item
+    |> :binary.first()
+    |> case do
+      code when code >= 97 ->
+        code - 96
+
+      code ->
+        code - 38
+    end
+  end)
+```
+
+```elixir
+Enum.sum(points)
+```
