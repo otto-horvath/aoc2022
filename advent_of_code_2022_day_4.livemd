@@ -1,0 +1,76 @@
+# Adventure of Code 2022 - day 4
+
+## Exercise
+
+https://adventofcode.com/2022/day/4
+
+## Input
+
+```elixir
+input =
+  [File.cwd!(), "Documents", "workspace", "aoc2022", "input_day_4.txt"]
+  |> Enum.join("/")
+  |> File.read!()
+  |> String.split()
+```
+
+## Problem one - comparing full joint ranges
+
+```elixir
+defmodule FullJoin do
+  def compare(range, [i, j]) do
+    Enum.member?(range, i) && Enum.member?(range, j)
+  end
+
+  def split(range) do
+    list = Enum.to_list(range)
+    [List.first(list), List.last(list)]
+  end
+end
+```
+
+```elixir
+ranges =
+  input
+  |> Enum.map(fn item ->
+    item
+    |> String.split(",")
+    |> Enum.map(fn el ->
+      [i, j] =
+        el
+        |> String.split("-")
+        |> Enum.map(&String.to_integer/1)
+
+      i..j
+    end)
+  end)
+
+ranges
+|> Enum.filter(fn [left, right] ->
+  FullJoin.compare(left, FullJoin.split(right)) ||
+    FullJoin.compare(right, FullJoin.split(left))
+end)
+|> Enum.count()
+```
+
+## Problem two - all joint ranges
+
+```elixir
+ranges =
+  input
+  |> Enum.map(fn item ->
+    item
+    |> String.split(",")
+    |> Enum.map(fn el ->
+      [i, j] =
+        el
+        |> String.split("-")
+        |> Enum.map(&String.to_integer/1)
+
+      i..j
+    end)
+  end)
+  |> Enum.count(fn [left, right] ->
+    !Range.disjoint?(left, right)
+  end)
+```
