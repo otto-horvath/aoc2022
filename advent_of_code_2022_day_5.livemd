@@ -84,3 +84,41 @@ final_stack
 |> Enum.map(&List.first/1)
 |> Enum.join()
 ```
+
+## Part two - CrateMover 9001, or moving without reverse
+
+```elixir
+defmodule BigCrane9001 do
+  def put(stack, cranes), do: List.flatten([cranes | stack])
+
+  def take(stack, qty) do
+    moving = Enum.take(stack, qty)
+    rest = Enum.drop(stack, qty)
+    [moving, rest]
+  end
+end
+```
+
+```elixir
+final_stack =
+  commands
+  |> Enum.reduce(stacks, fn command, stacks ->
+    [qty, i, j] = command
+
+    from = Enum.at(stacks, i - 1)
+    to = Enum.at(stacks, j - 1)
+
+    [crates, from] = BigCrane9001.take(from, qty)
+    to = BigCrane9001.put(to, crates)
+
+    stacks
+    |> List.replace_at(i - 1, from)
+    |> List.replace_at(j - 1, to)
+  end)
+```
+
+```elixir
+final_stack
+|> Enum.map(&List.first/1)
+|> Enum.join()
+```
