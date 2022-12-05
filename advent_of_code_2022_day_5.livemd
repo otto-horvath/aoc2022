@@ -1,0 +1,86 @@
+# Advent of Code 2022 - day 5
+
+## Input
+
+```elixir
+[map, commands] =
+  [File.cwd!(), "Documents", "workspace", "aoc2022", "input_day_5.txt"]
+  |> Enum.join("/")
+  |> File.read!()
+  |> String.split("\n\r")
+
+{_columns, map} =
+  map
+  |> String.split("\r\n")
+  |> List.pop_at(-1)
+
+commands =
+  commands
+  |> String.trim()
+  |> String.split("\r\n")
+  |> Enum.map(fn command ->
+    ~r/[\d]+/
+    |> Regex.scan(command)
+    |> List.flatten()
+    |> Enum.map(&String.to_integer/1)
+  end)
+
+{map, commands}
+```
+
+## Problem one - which crate will end up?
+
+```elixir
+stacks =
+  Enum.map(map, fn line ->
+    full_line =
+      line
+      |> String.replace("    ", " # ")
+      |> String.replace("[", "")
+      |> String.replace("]", "")
+
+    Regex.scan(~r/[^ ]/, full_line)
+    |> List.flatten()
+  end)
+  |> Enum.zip()
+  |> Enum.map(&Tuple.to_list/1)
+  |> Enum.map(fn line -> Enum.reject(line, &(&1 == "#")) end)
+```
+
+```elixir
+defmodule BigCrane do
+  def put(stack, cranes) do
+    List.flatten([Enum.reverse(cranes) | stack])
+  end
+
+  def take(stack, qty) do
+    moving = Enum.take(stack, qty)
+    rest = Enum.drop(stack, qty)
+    [moving, rest]
+  end
+end
+```
+
+```elixir
+final_stack =
+  commands
+  |> Enum.reduce(stacks, fn command, stacks ->
+    [qty, i, j] = command
+
+    from = Enum.at(stacks, i - 1)
+    to = Enum.at(stacks, j - 1)
+
+    [crates, from] = BigCrane.take(from, qty)
+    to = BigCrane.put(to, crates)
+
+    stacks
+    |> List.replace_at(i - 1, from)
+    |> List.replace_at(j - 1, to)
+  end)
+```
+
+```elixir
+final_stack
+|> Enum.map(&List.first/1)
+|> Enum.join()
+```
