@@ -1,0 +1,46 @@
+# Advent of Code 2022 - day 6
+
+## Input
+
+```elixir
+[sequence] =
+  [File.cwd!(), "Documents", "workspace", "aoc2022", "input_day_6.txt"]
+  |> Enum.join("/")
+  |> File.read!()
+  |> String.split("\r\n")
+```
+
+## Problem one - how many chars before init sequence?
+
+```elixir
+qty =
+  sequence
+  |> String.graphemes()
+  |> Enum.chunk_every(4, 1)
+  |> Enum.find_index(fn [a, b, c, d] ->
+    a != b && a != c && a != d &&
+      (b != c && b != d) &&
+      c != d
+  end)
+
+{qty + 4, sequence}
+```
+
+## Problem two - how many in a longer sequence - 14chars
+
+```elixir
+qty =
+  sequence
+  |> String.graphemes()
+  |> Enum.chunk_every(14, 1)
+  |> Enum.find_index(fn bits ->
+    uniq_bits =
+      bits
+      |> Enum.uniq()
+      |> Enum.count()
+
+    14 == uniq_bits
+  end)
+
+{qty + 14, sequence}
+```
