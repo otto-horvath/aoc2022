@@ -1,0 +1,147 @@
+# Advent of Code 2022 - day 7
+
+## Input
+
+```elixir
+input =
+  [File.cwd!(), "Documents", "workspace", "aoc2022", "input_day_7.txt"]
+  |> Enum.join("/")
+  |> File.read!()
+  |> String.split("\r\n")
+```
+
+## Problem one - map filesystem and find dirs < 100_000
+
+```elixir
+filesystem = %{
+  cwd: [],
+  nodes: []
+}
+
+fs =
+  input
+  |> Enum.reduce(filesystem, fn
+    "$ cd ..", %{cwd: cwd} = fs ->
+      {_, current} = List.pop_at(cwd, -1)
+      %{fs | cwd: current}
+
+    "$ cd " <> dir, %{cwd: cwd, nodes: nodes} = fs ->
+      current = cwd ++ [dir]
+      %{fs | cwd: current, nodes: [[:dir, current, []] | nodes]}
+
+    "$ ls", fs ->
+      fs
+
+    "dir " <> dir, %{nodes: [actual | rest]} = fs ->
+      entries =
+        actual
+        |> List.last()
+        |> List.insert_at(-1, [:dir, dir])
+
+      actual = List.replace_at(actual, -1, entries)
+
+      %{fs | nodes: [actual | rest]}
+
+    file_entry, %{nodes: [actual | rest]} = fs ->
+      [size, name] = String.split(file_entry, " ")
+      size = String.to_integer(size)
+
+      entries =
+        actual
+        |> List.last()
+        |> List.insert_at(-1, [:file, name, size])
+
+      actual = List.replace_at(actual, -1, entries)
+
+      %{fs | nodes: [actual | rest]}
+  end)
+
+fs =
+  fs[:nodes]
+  |> Enum.map(fn [:dir, path, childs] ->
+    total =
+      childs
+      |> Enum.filter(fn
+        [:file, _, _] -> true
+        _ -> false
+      end)
+      |> Enum.reduce(0, fn [_, _, size], acc -> acc + size end)
+
+    [:dir, path, childs, total]
+  end)
+```
+
+```elixir
+defmodule FS do
+  def subdirs(nodes) do
+    nodes
+    |> Enum.filter(fn
+      [:dir, _] ->
+        true
+
+      _ ->
+        false
+    end)
+    |> Enum.map(fn [_, name] -> name end)
+  end
+
+  def get_size(_, _, []), do: 0
+
+  def get_size(fs, cwd, [dir | paths]) do
+    pwd = cwd ++ [dir]
+
+    current_node =
+      fs
+      |> Enum.filter(fn
+        [_, path, _, _] ->
+          path == pwd
+
+        _ ->
+          false
+      end)
+      |> List.first()
+
+    [_, _, nodes, size] = current_node
+
+    size + get_size(fs, pwd, subdirs(nodes)) + get_size(fs, cwd, paths)
+  end
+end
+```
+
+```elixir
+fs =
+  fs
+  |> Enum.map(fn [_, cwd, nodes, file_size] ->
+    child_nodes =
+      nodes
+      |> FS.subdirs()
+
+    total_size = FS.get_size(fs, cwd, child_nodes)
+
+    [:dir, cwd, nodes, file_size + total_size]
+  end)
+```
+
+```elixir
+fs
+|> Enum.filter(fn [_, _, _, size] -> 100_000 >= size end)
+|> Enum.reduce(0, fn [_, _, _, size], acc -> acc + size end)
+```
+
+## Problem two - remove just enough to free
+
+```elixir
+sorted_fs =
+  fs
+  |> Enum.sort(fn [_, _, _, size_a], [_, _, _, size_b] ->
+    size_a > size_b
+  end)
+
+{[_, _, _, total], fs} = sorted_fs |> List.pop_at(0)
+
+fs
+|> Enum.filter(fn [_, _, _, size] ->
+  size > 30_000_000 - (70_000_000 - total)
+end)
+|> List.last()
+```
