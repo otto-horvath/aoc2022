@@ -121,3 +121,129 @@ visible_trees
 |> List.flatten()
 |> Enum.count(fn t -> t == 1 end)
 ```
+
+## Problem 2 - most scenic tree
+
+```elixir
+defmodule Search do
+  def find_last_index(enum, el) do
+    _find_last_index(enum, el)
+  end
+
+  defp _find_last_index(enum, el, pos \\ nil)
+
+  defp _find_last_index(enum, el, pos) do
+    case Enum.find_index(enum, &(&1 == el)) do
+      nil ->
+        pos
+
+      idx ->
+        {_, right} =
+          enum
+          |> Enum.split(idx + 1)
+
+        case pos do
+          nil ->
+            _find_last_index(right, el, idx)
+
+          _ ->
+            _find_last_index(right, el, pos + idx + 1)
+        end
+    end
+  end
+end
+```
+
+```elixir
+scenic_view = fn line ->
+  for n <- 0..(map_size - 1) do
+    tree_size = Enum.at(line, n)
+    {left, right} = Enum.split(line, n)
+
+    {_, right} = List.pop_at(right, 0)
+
+    big_left =
+      left
+      |> Enum.filter(fn i -> i >= tree_size end)
+      |> List.last()
+
+    big_left_pos =
+      left
+      |> Search.find_last_index(big_left)
+
+    big_right =
+      right
+      |> Enum.filter(fn i -> i >= tree_size end)
+      |> List.first()
+
+    big_right_pos =
+      right
+      |> Enum.find_index(&(&1 == big_right))
+
+    left_view =
+      cond do
+        [] == left ->
+          0
+
+        tree_size > big_left || big_left == nil ->
+          length(left)
+
+        true ->
+          n - big_left_pos
+      end
+
+    right_view =
+      cond do
+        [] == right ->
+          0
+
+        tree_size > big_right || big_right == nil ->
+          length(right)
+
+        true ->
+          big_right_pos + 1
+      end
+
+    [left_view, right_view]
+  end
+end
+```
+
+```elixir
+hmap =
+  map
+  |> Enum.map(fn line ->
+    scenic_view.(line)
+  end)
+```
+
+```elixir
+vmap =
+  turn_map.(map)
+  |> Enum.map(&scenic_view.(&1))
+  |> :lists.reverse()
+  |> Enum.zip()
+  |> Enum.map(&Tuple.to_list/1)
+```
+
+```elixir
+lines_count = length(hmap)
+
+scenic_map =
+  for i <- 0..(lines_count - 1) do
+    hrow = Enum.at(hmap, i)
+    vrow = Enum.at(vmap, i)
+
+    for j <- 0..(map_size - 1) do
+      [l, r] = Enum.at(hrow, j)
+      [t, d] = Enum.at(vrow, j)
+
+      l * r * t * d
+    end
+  end
+
+scenic_map
+|> IO.inspect()
+|> List.flatten()
+|> Enum.max()
+```
