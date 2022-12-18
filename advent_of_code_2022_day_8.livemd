@@ -1,0 +1,123 @@
+# Advent of Code - day 8
+
+## Input
+
+```elixir
+input =
+  [File.cwd!(), "Documents", "workspace", "aoc2022", "input_day_8.txt"]
+  |> Enum.join("/")
+  |> File.read!()
+  |> String.split("\n")
+```
+
+## Problem one - how many visible trees?
+
+```elixir
+map =
+  input
+  |> Enum.map(fn line ->
+    line
+    |> String.graphemes()
+    |> Enum.map(&String.to_integer/1)
+  end)
+```
+
+```elixir
+map_size = map |> List.first() |> length()
+```
+
+```elixir
+view_map = fn line ->
+  for n <- 0..(map_size - 1) do
+    tree_size = Enum.at(line, n)
+    {left, right} = Enum.split(line, n)
+
+    {_, right} = List.pop_at(right, 0)
+
+    big_left =
+      left
+      |> Enum.sort()
+      |> List.last()
+
+    big_right =
+      right
+      |> Enum.sort()
+      |> List.last()
+
+    cond do
+      [] == left ->
+        1
+
+      [] == right ->
+        1
+
+      big_left < tree_size ->
+        1
+
+      tree_size > big_right ->
+        1
+
+      true ->
+        0
+    end
+  end
+end
+```
+
+```elixir
+turn_map = fn map ->
+  map
+  |> Enum.zip()
+  |> Enum.map(&Tuple.to_list/1)
+  |> :lists.reverse()
+end
+```
+
+```elixir
+hmap =
+  map
+  |> Enum.map(fn line ->
+    view_map.(line)
+  end)
+```
+
+```elixir
+vmap =
+  turn_map.(map)
+  |> Enum.map(&view_map.(&1))
+  |> :lists.reverse()
+  |> Enum.zip()
+  |> Enum.map(&Tuple.to_list/1)
+```
+
+```elixir
+{hmap, vmap}
+```
+
+```elixir
+lines_count = length(hmap)
+
+visible_trees =
+  for i <- 0..(lines_count - 1) do
+    hrow = Enum.at(hmap, i)
+    vrow = Enum.at(vmap, i)
+
+    for j <- 0..(map_size - 1) do
+      htree = Enum.at(hrow, j)
+      vtree = Enum.at(vrow, j)
+
+      case {htree, vtree} do
+        {0, 0} ->
+          0
+
+        _ ->
+          1
+      end
+    end
+  end
+
+visible_trees
+|> IO.inspect()
+|> List.flatten()
+|> Enum.count(fn t -> t == 1 end)
+```
